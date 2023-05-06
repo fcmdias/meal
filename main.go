@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"text/template"
 )
 
 type Recipe struct {
@@ -35,6 +35,25 @@ func recipeOfTheDayHandler(w http.ResponseWriter, r *http.Request) {
 			"Season with salt and pepper to taste. Serve hot, garnished with additional Parmesan cheese if desired.",
 		},
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(recipe)
+
+	// Define the data context for the template
+	data := struct {
+		Recipe Recipe
+	}{
+		Recipe: recipe,
+	}
+
+	// Parse the template file
+	tmpl, err := template.ParseFiles("templates/recipe_of_the_day.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Render the template with the data context
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

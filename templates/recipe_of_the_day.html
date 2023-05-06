@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Recipe of the Day</title>
+  </head>
+  <body>
+    <h1>Recipe of the Day</h1>
+    {{ if .Recipe }}
+    <h2>{{ .Recipe.Name }}</h2>
+    <p>{{ .Recipe.Description }}</p>
+    <h3>Ingredients:</h3>
+    <ul>
+      {{ range .Recipe.Ingredients }}
+      <li>{{ . }}</li>
+      {{ end }}
+    </ul>
+    <h3>Directions:</h3>
+    <ol>
+      {{ range .Recipe.Directions }}
+      <li>{{ . }}</li>
+      {{ end }}
+    </ol>
+    {{ else }}
+    <p>No recipe found.</p>
+    {{ end }}
+  </body>
+</html>
