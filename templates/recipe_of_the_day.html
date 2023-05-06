@@ -2,6 +2,9 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
+
     <title>Recipe of the Day</title>
     <style>
       /* Default color scheme */
@@ -21,6 +24,17 @@
   </head>
   <body>
     <h1>Recipe of the Day</h1>
+
+
+    <form action="/recipe-of-the-day" method="post">
+      <div class="diet-inputs">
+        {{range .Diets}}
+          <input type="radio" name={{.Name}} value={{.Value}} {{if .IsDisabled}} disabled=true {{end}} {{if .IsChecked}}checked{{end}}> {{.Text}}
+        {{end}}<br>
+      </div>
+    </form>
+
+
     {{ if .Recipe }}
     <h2>{{ .Recipe.Name }}</h2>
     <p>{{ .Recipe.Description }}</p>
@@ -39,5 +53,14 @@
     {{ else }}
     <p>No recipe found.</p>
     {{ end }}
+
+
+    <script type='text/javascript'>
+      $(document).ready(function() {
+        $('input[name=diet]').change(function(){
+          $('form').submit();
+        });
+      });
+    </script>
   </body>
 </html>
