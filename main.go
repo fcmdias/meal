@@ -23,9 +23,13 @@ func run(log *log.Logger) error {
 	// Configuration
 
 	var cfg struct {
+		// todo fix the default configuration
 		Port string `conf:"default:8080"`
 	}
-
+	if cfg.Port == "" {
+		log.Println("defult not set")
+		cfg.Port = ":8080"
+	}
 	b := handlers.Base{Log: log}
 
 	// =======================================================================
