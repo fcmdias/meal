@@ -1,0 +1,14 @@
+# Specify the version for docker-compose.yml
+version: "3.8"
+
+# add the serivces needed (go)
+services:
+  my-go-app:
+    container_name: my-go-app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./templates:/app/templates
+    # # build the Dockerfile, alternatively use an image.
+    build:
+      context: .
