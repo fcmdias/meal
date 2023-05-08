@@ -1,5 +1,9 @@
-run: 
-	rm main 
+up: 
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
-	docker build -t my-go-app .
-	docker run -p 8080:8080 my-go-app
+	docker-compose up --build -V
+
+down: 
+	docker-compose down
+	rm main
+
+restart: down up

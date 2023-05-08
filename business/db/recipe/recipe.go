@@ -1,6 +1,20 @@
 package recipe
 
-import "github.com/fcmdias/meal/business/models"
+import (
+	"database/sql"
+	"encoding/json"
+	"fmt"
+
+	"github.com/fcmdias/meal/business/models"
+
+	_ "github.com/lib/pq"
+)
+
+// Get this package if it's missing.
+// go get -u github.com/lib/pq
+// If you encounter problems like I did with a newer version of Go. Run the following:
+// GO111MODULE="off" go get -u github.com/lib/pq
+// Restart IDE
 
 var recipes = []models.Recipe{
 	{
@@ -64,14 +78,110 @@ var recipes = []models.Recipe{
 	},
 }
 
-func Get(diet string) models.Recipe {
+func Get(diet models.DietName) models.Recipe {
+	fmt.Println("getting recipe for ", diet)
 	switch diet {
-	case "vegan":
+	case models.Vegan:
 		return recipes[0]
-	case "begetarian":
+	case models.Vegetarian:
 		return recipes[1]
-	case "omnivore":
+	case models.Omnivore:
 		return recipes[2]
 	}
-	return recipes[2]
+	return recipes[0]
+}
+
+func Save(db *sql.DB) error {
+
+	fmt.Println("saving new recipe")
+
+	recipe := models.Recipe{
+		Name:        "Sweet Potato and Chickpea Curry",
+		Description: "A vegan curry recipe made with sweet potatoes, chickpeas, and a variety of spices.",
+		Ingredients: []string{
+			"1 large sweet potato, peeled and diced",
+			"1 can chickpeas, drained and rinsed",
+			"1 onion, diced", "2 cloves garlic, minced",
+			"1 tablespoon ginger, minced",
+			"1 can coconut milk",
+			"2 tablespoons tomato paste",
+			"1 tablespoon curry powder",
+			"1 teaspoon cumin",
+			"1 teaspoon coriander",
+			"Salt and pepper to taste",
+		},
+		Directions: []string{
+			"Heat a large pot over medium heat. Add the sweet potato and onion and cook until the onion is translucent, about 5 minutes.",
+			"Add the garlic and ginger and cook for an additional minute.",
+			"Stir in the chickpeas, coconut milk, tomato paste, curry powder, cumin, and coriander. Season with salt and pepper to taste.",
+			"Bring the mixture to a boil, then reduce heat to low and let simmer until the sweet potato is tender, about 20 minutes.",
+			"Serve hot, garnished with chopped fresh cilantro or parsley if desired.",
+		},
+	}
+
+	ingredients, err := json.Marshal(recipe.Ingredients)
+	if err != nil {
+		return err
+	}
+	directions, err := json.Marshal(recipe.Directions)
+	if err != nil {
+		return err
+	}
+
+	sqlStatement := `INSERT INTO recipes (name, description, ingredients, directions) 
+	VALUES ($1, $2, $3, $4)`
+	fmt.Println(sqlStatement)
+	_, err = db.Exec(sqlStatement, recipe.Name,
+		recipe.Description,
+		ingredients,
+		directions)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func CreateTable(db *sql.DB) error {
+	_, err := db.Exec(`DROP TABLE IF EXISTS recipes;`)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`CREATE TABLE recipes (
+		id SERIAL PRIMARY KEY,
+		name TEXT NOT NULL,
+		description TEXT,
+		ingredients JSONB,
+		directions JSONB
+	)`)
+	if err != nil {
+		return err
+	}
+	fmt.Println("table recipes is created")
+	return nil
+
+}
+
+func GetFirstRecipeFromDB(db *sql.DB) (models.Recipe, error) {
+	var recipe models.Recipe
+	var ingredientsJson, directionsJson []byte
+
+	row := db.QueryRow("SELECT name, description, ingredients, directions FROM recipes LIMIT 1")
+	err := row.Scan(&recipe.Name, &recipe.Description, &ingredientsJson, &directionsJson)
+	if err != nil {
+		return recipe, err
+	}
+
+	err = json.Unmarshal(ingredientsJson, &recipe.Ingredients)
+	if err != nil {
+		return recipe, err
+	}
+
+	err = json.Unmarshal(directionsJson, &recipe.Directions)
+	if err != nil {
+		return recipe, err
+	}
+
+	return recipe, nil
 }

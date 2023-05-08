@@ -14,3 +14,11 @@ type Diet struct {
 	IsChecked  bool
 	Text       string
 }
+
+type DietName int
+
+const (
+	Vegan = iota
+	Vegetarian
+	Omnivore
+)

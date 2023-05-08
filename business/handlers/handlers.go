@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -12,8 +14,34 @@ import (
 
 type Base struct {
 	Log *log.Logger
+	DB  *sql.DB
 }
 
+func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
+	err := recipe.Save(b.DB)
+	if err != nil {
+		b.Log.Println(err, "printing")
+	}
+	b.Log.Println("no errors")
+}
+func (b *Base) Get(w http.ResponseWriter, r *http.Request) {
+
+	recipe, err := recipe.GetFirstRecipeFromDB(b.DB)
+	if err != nil {
+		b.Log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	jsonData, err := json.Marshal(recipe)
+	if err != nil {
+		log.Printf("Error encoding recipe as JSON: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
+
+}
 func (b *Base) RecipeOfTheDayHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm() //r is url.Values which is a map[string][]string
@@ -61,20 +89,25 @@ func (b *Base) RecipeOfTheDayHandler(w http.ResponseWriter, r *http.Request) {
 	data.Diets = diets
 
 	if len(svalues) > 0 {
+		var dietname models.DietName
 		switch svalues[0] {
 		case "vegan":
 			data.Diets[0].IsChecked = true
+			dietname = models.Vegan
 		case "vegetarian":
 			data.Diets[1].IsChecked = true
+			dietname = models.Vegetarian
 		case "omnivore":
 			data.Diets[2].IsChecked = true
+			dietname = models.Omnivore
 		default:
 			data.Diets[0].IsChecked = true
+			dietname = models.Vegan
 		}
-		data.Recipe = recipe.Get(svalues[0])
+		data.Recipe = recipe.Get(dietname)
 	} else {
 		data.Diets[0].IsChecked = true
-		data.Recipe = recipe.Get("")
+		data.Recipe = recipe.Get(models.Vegan)
 	}
 
 	fmt.Println(data)
@@ -92,4 +125,21 @@ func (b *Base) RecipeOfTheDayHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (b *Base) Create(w http.ResponseWriter, r *http.Request) {
+	err := recipe.CreateTable(b.DB)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	recipe := models.Recipe{Name: "something"}
+	jsonData, err := json.Marshal(recipe)
+	if err != nil {
+		log.Printf("Error encoding recipe as JSON: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
 }
