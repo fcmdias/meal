@@ -6,7 +6,7 @@ Meal is a web server written in Go that provides meal recipes to users. It inclu
 
 - Go 1.19 or higher
 
-## Contributing
+## Contributing
 
 Contributions to Meal are welcome! If you find a bug or have a feature request, please open an issue on the GitHub repository.
 
