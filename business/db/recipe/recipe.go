@@ -91,34 +91,9 @@ func Get(diet models.DietName) models.Recipe {
 	return recipes[0]
 }
 
-func Save(db *sql.DB) error {
+func Save(db *sql.DB, recipe models.Recipe) error {
 
 	fmt.Println("saving new recipe")
-
-	recipe := models.Recipe{
-		Name:        "Sweet Potato and Chickpea Curry",
-		Description: "A vegan curry recipe made with sweet potatoes, chickpeas, and a variety of spices.",
-		Ingredients: []string{
-			"1 large sweet potato, peeled and diced",
-			"1 can chickpeas, drained and rinsed",
-			"1 onion, diced", "2 cloves garlic, minced",
-			"1 tablespoon ginger, minced",
-			"1 can coconut milk",
-			"2 tablespoons tomato paste",
-			"1 tablespoon curry powder",
-			"1 teaspoon cumin",
-			"1 teaspoon coriander",
-			"Salt and pepper to taste",
-		},
-		Directions: []string{
-			"Heat a large pot over medium heat. Add the sweet potato and onion and cook until the onion is translucent, about 5 minutes.",
-			"Add the garlic and ginger and cook for an additional minute.",
-			"Stir in the chickpeas, coconut milk, tomato paste, curry powder, cumin, and coriander. Season with salt and pepper to taste.",
-			"Bring the mixture to a boil, then reduce heat to low and let simmer until the sweet potato is tender, about 20 minutes.",
-			"Serve hot, garnished with chopped fresh cilantro or parsley if desired.",
-		},
-	}
-
 	ingredients, err := json.Marshal(recipe.Ingredients)
 	if err != nil {
 		return err
@@ -184,4 +159,47 @@ func GetFirstRecipeFromDB(db *sql.DB) (models.Recipe, error) {
 	}
 
 	return recipe, nil
+}
+
+// GetAllRecipesFromDB function executes a SQL SELECT statement to fetch all
+// rows from the recipes table. It iterates over the rows, scans the values
+// into a Recipe struct, and unmarshals the ingredientsJSON and directionsJSON
+// into their respective fields. The function appends each recipe to a slice of
+// recipes, which is then returned.
+func GetAllRecipesFromDB(db *sql.DB) ([]models.Recipe, error) {
+	var recipes []models.Recipe
+
+	rows, err := db.Query("SELECT name, description, ingredients, directions FROM recipes")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var recipe models.Recipe
+		var ingredientsJSON, directionsJSON []byte
+
+		err := rows.Scan(&recipe.Name, &recipe.Description, &ingredientsJSON, &directionsJSON)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(ingredientsJSON, &recipe.Ingredients)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(directionsJSON, &recipe.Directions)
+		if err != nil {
+			return nil, err
+		}
+
+		recipes = append(recipes, recipe)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return recipes, nil
 }

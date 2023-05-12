@@ -71,6 +71,7 @@ func run(log *log.Logger) error {
 	http.HandleFunc("/save", b.Save)
 	http.HandleFunc("/get", b.Get)
 	http.HandleFunc("/create", b.Create)
+	http.HandleFunc("/recipes", b.GetAll)
 	log.Fatal(http.ListenAndServe(cfg.Port, nil))
 
 	return nil

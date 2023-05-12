@@ -18,14 +18,55 @@ type Base struct {
 }
 
 func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
-	err := recipe.Save(b.DB)
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var recipeData models.Recipe
+	err := json.NewDecoder(r.Body).Decode(&recipeData)
+	if err != nil {
+		log.Printf("Error decoding recipe payload: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = recipe.Save(b.DB, recipeData)
 	if err != nil {
 		b.Log.Println(err, "printing")
+		return
 	}
 	b.Log.Println("no errors")
-}
-func (b *Base) Get(w http.ResponseWriter, r *http.Request) {
 
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (b *Base) GetAll(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	recipes, err := recipe.GetAllRecipesFromDB(b.DB)
+	if err != nil {
+		log.Printf("Error retrieving recipes: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.Marshal(recipes)
+	if err != nil {
+		log.Printf("Error encoding recipes as JSON: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
+
+}
+
+func (b *Base) Get(w http.ResponseWriter, r *http.Request) {
 	recipe, err := recipe.GetFirstRecipeFromDB(b.DB)
 	if err != nil {
 		b.Log.Println(err)
@@ -40,8 +81,8 @@ func (b *Base) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonData)
-
 }
+
 func (b *Base) RecipeOfTheDayHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm() //r is url.Values which is a map[string][]string
