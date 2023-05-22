@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/fcmdias/meal/business/handlers"
+	"github.com/fcmdias/meal/business/handlers/meal"
 	_ "github.com/lib/pq"
 )
 
@@ -34,7 +34,7 @@ func run(log *log.Logger) error {
 		log.Println("defult not set")
 		cfg.Port = ":8080"
 	}
-	b := handlers.Base{Log: log}
+	b := meal.Base{Log: log}
 
 	// =======================================================================
 	// Database Support
@@ -67,11 +67,11 @@ func run(log *log.Logger) error {
 	// =======================================================================
 	// App running
 
-	http.HandleFunc("/recipe-of-the-day", b.RecipeOfTheDayHandler)
-	http.HandleFunc("/save", b.Save)
-	http.HandleFunc("/get", b.Get)
-	http.HandleFunc("/create", b.Create)
 	http.HandleFunc("/recipes", b.GetAll)
+	http.HandleFunc("/recipes/create", b.Save)
+	http.HandleFunc("/recipes/get", b.Get)
+	http.HandleFunc("/recipes/recipe-of-the-day", b.RecipeOfTheDayHandler)
+	http.HandleFunc("/recipes/createtable", b.Create)
 	log.Fatal(http.ListenAndServe(cfg.Port, nil))
 
 	return nil

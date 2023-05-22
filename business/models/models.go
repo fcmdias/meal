@@ -1,6 +1,22 @@
 package models
 
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
 type Recipe struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Ingredients []string `json:"ingredients"`
+	Directions  []string `json:"directions"`
+	DateCreated time.Time
+	DateUpdated time.Time
+}
+
+type NewRecipe struct {
+	ID          uuid.UUID
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Ingredients []string `json:"ingredients"`
@@ -15,10 +31,10 @@ type Diet struct {
 	Text       string
 }
 
-type DietName int
+type DietType int
 
 const (
-	Vegan = iota
+	Vegan DietType = iota
 	Vegetarian
 	Omnivore
 )

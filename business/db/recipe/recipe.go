@@ -78,7 +78,7 @@ var recipes = []models.Recipe{
 	},
 }
 
-func Get(diet models.DietName) models.Recipe {
+func Get(diet models.DietType) models.Recipe {
 	fmt.Println("getting recipe for ", diet)
 	switch diet {
 	case models.Vegan:

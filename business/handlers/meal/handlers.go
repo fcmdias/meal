@@ -1,4 +1,4 @@
-package handlers
+package meal
 
 import (
 	"database/sql"
@@ -35,7 +35,6 @@ func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
 		b.Log.Println(err, "printing")
 		return
 	}
-	b.Log.Println("no errors")
 
 	w.WriteHeader(http.StatusCreated)
 }
@@ -66,6 +65,7 @@ func (b *Base) GetAll(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// todo pass the id in the pattern
 func (b *Base) Get(w http.ResponseWriter, r *http.Request) {
 	recipe, err := recipe.GetFirstRecipeFromDB(b.DB)
 	if err != nil {
@@ -130,7 +130,7 @@ func (b *Base) RecipeOfTheDayHandler(w http.ResponseWriter, r *http.Request) {
 	data.Diets = diets
 
 	if len(svalues) > 0 {
-		var dietname models.DietName
+		var dietname models.DietType
 		switch svalues[0] {
 		case "vegan":
 			data.Diets[0].IsChecked = true
