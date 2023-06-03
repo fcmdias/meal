@@ -10,6 +10,7 @@ import (
 
 	"github.com/fcmdias/meal/business/db/recipe"
 	"github.com/fcmdias/meal/business/models"
+	"github.com/go-playground/validator"
 )
 
 type Base struct {
@@ -22,14 +23,20 @@ func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	var recipeData models.Recipe
-	err := json.NewDecoder(r.Body).Decode(&recipeData)
+	var newRecipeData models.NewRecipe
+	err := json.NewDecoder(r.Body).Decode(&newRecipeData)
 	if err != nil {
 		log.Printf("Error decoding recipe payload: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	if err := validator.New().Struct(newRecipeData); err != nil {
+		log.Printf("Error validating new recipe: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	recipeData := models.NewRecipeToRecipe(newRecipeData)
 	err = recipe.Save(b.DB, recipeData)
 	if err != nil {
 		b.Log.Println(err, "printing")

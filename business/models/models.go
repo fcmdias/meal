@@ -7,20 +7,29 @@ import (
 )
 
 type Recipe struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Ingredients []string `json:"ingredients"`
-	Directions  []string `json:"directions"`
+	ID          uuid.UUID
+	Name        string
+	Description string
+	Ingredients []string
+	Directions  []string
 	DateCreated time.Time
 	DateUpdated time.Time
 }
 
 type NewRecipe struct {
-	ID          uuid.UUID
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Ingredients []string `json:"ingredients"`
-	Directions  []string `json:"directions"`
+	Name        string   `json:"name" validate:"required"`
+	Description string   `json:"description" validate:"required"`
+	Ingredients []string `json:"ingredients" validate:"required"`
+	Directions  []string `json:"directions" validate:"required"`
+}
+
+func NewRecipeToRecipe(n NewRecipe) Recipe {
+	return Recipe{
+		Name:        n.Name,
+		Description: n.Description,
+		Ingredients: n.Ingredients,
+		Directions:  n.Directions,
+	}
 }
 
 type Diet struct {
