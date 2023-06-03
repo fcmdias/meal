@@ -25,10 +25,12 @@ type NewRecipe struct {
 
 func NewRecipeToRecipe(n NewRecipe) Recipe {
 	return Recipe{
+		ID:          uuid.New(),
 		Name:        n.Name,
 		Description: n.Description,
 		Ingredients: n.Ingredients,
 		Directions:  n.Directions,
+		DateCreated: time.Now(),
 	}
 }
 

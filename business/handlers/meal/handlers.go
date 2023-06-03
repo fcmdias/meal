@@ -11,6 +11,8 @@ import (
 	"github.com/fcmdias/meal/business/db/recipe"
 	"github.com/fcmdias/meal/business/models"
 	"github.com/go-playground/validator"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 type Base struct {
@@ -20,50 +22,61 @@ type Base struct {
 
 func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
 	var newRecipeData models.NewRecipe
-	err := json.NewDecoder(r.Body).Decode(&newRecipeData)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&newRecipeData); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		log.Printf("Error decoding recipe payload: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := validator.New().Struct(newRecipeData); err != nil {
+
+	validate := validator.New()
+	if err := validate.Struct(newRecipeData); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		log.Printf("Error validating new recipe: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	recipeData := models.NewRecipeToRecipe(newRecipeData)
-	err = recipe.Save(b.DB, recipeData)
-	if err != nil {
-		b.Log.Println(err, "printing")
+	if err := recipe.Save(b.DB, recipeData); err != nil {
+		b.Log.Println(errors.Wrap(err, "failed to save recipe"))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	responseJSON, err := json.Marshal(recipeData)
+	if err != nil {
+		b.Log.Println(errors.Wrap(err, "failed to marshal recipeData JSON"))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	w.Write(responseJSON)
 }
 
 func (b *Base) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	recipes, err := recipe.GetAllRecipesFromDB(b.DB)
 	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Error retrieving recipes: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	jsonData, err := json.Marshal(recipes)
 	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Error encoding recipes as JSON: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -72,20 +85,41 @@ func (b *Base) GetAll(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// todo pass the id in the pattern
+// Get retrieves a recipe by ID and returns it as JSON.
+// It expects the recipe ID to be passed as a query parameter "id" in the URL.
+// If the recipe is found, it returns a JSON response with the recipe data.
+// If the recipe ID is not provided or is invalid, it returns a "Bad Request" response.
+// If the recipe is not found, it returns a "Not Found" response.
+// If there is an error retrieving or encoding the recipe, it returns an "Internal Server Error" response.
 func (b *Base) Get(w http.ResponseWriter, r *http.Request) {
-	recipe, err := recipe.GetFirstRecipeFromDB(b.DB)
+	recipeIDStr := r.URL.Query().Get("id")
+	recipeID, err := uuid.Parse(recipeIDStr)
 	if err != nil {
-		b.Log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		log.Printf("Invalid recipe ID: %v", err)
 		return
 	}
-	jsonData, err := json.Marshal(recipe)
+
+	log.Println("id: ", recipeID.String())
+	recipeSaved, err := recipe.GetRecipeByIDFromDB(b.DB, recipeID)
 	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Error retrieving recipe: %v", err)
+		return
+	}
+
+	if recipeSaved == nil {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	jsonData, err := json.Marshal(recipeSaved)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Error encoding recipe as JSON: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonData)
 }

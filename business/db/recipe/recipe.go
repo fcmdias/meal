@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/fcmdias/meal/business/models"
+	"github.com/google/uuid"
 
 	_ "github.com/lib/pq"
 )
@@ -103,10 +104,12 @@ func Save(db *sql.DB, recipe models.Recipe) error {
 		return err
 	}
 
-	sqlStatement := `INSERT INTO recipes (name, description, ingredients, directions) 
-	VALUES ($1, $2, $3, $4)`
+	sqlStatement := `INSERT INTO recipes (id, name, description, ingredients, directions) 
+	VALUES ($1, $2, $3, $4, $5)`
 	fmt.Println(sqlStatement)
-	_, err = db.Exec(sqlStatement, recipe.Name,
+	_, err = db.Exec(sqlStatement,
+		recipe.ID,
+		recipe.Name,
 		recipe.Description,
 		ingredients,
 		directions)
@@ -124,7 +127,7 @@ func CreateTable(db *sql.DB) error {
 		return err
 	}
 	_, err = db.Exec(`CREATE TABLE recipes (
-		id SERIAL PRIMARY KEY,
+		id UUID PRIMARY KEY,
 		name TEXT NOT NULL,
 		description TEXT,
 		ingredients JSONB,
@@ -138,27 +141,33 @@ func CreateTable(db *sql.DB) error {
 
 }
 
-func GetFirstRecipeFromDB(db *sql.DB) (models.Recipe, error) {
+// GetRecipeByIDFromDB fetches a recipe from the database by its ID.
+// It executes a SQL query to retrieve the recipe's name, description, ingredients, and directions.
+// The recipe ID is used as a parameter in the query to filter the results.
+// The ingredients and directions are stored as JSON in the database and are unmarshaled into slices.
+// If the recipe is found, it returns the recipe object with the populated fields.
+// If an error occurs during the query execution or unmarshaling process, it returns an error.
+func GetRecipeByIDFromDB(db *sql.DB, recipeID uuid.UUID) (*models.Recipe, error) {
 	var recipe models.Recipe
 	var ingredientsJson, directionsJson []byte
 
-	row := db.QueryRow("SELECT name, description, ingredients, directions FROM recipes LIMIT 1")
-	err := row.Scan(&recipe.Name, &recipe.Description, &ingredientsJson, &directionsJson)
+	row := db.QueryRow("SELECT id, name, description, ingredients, directions FROM recipes WHERE id = $1 LIMIT 1", recipeID.String())
+	err := row.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJson, &directionsJson)
 	if err != nil {
-		return recipe, err
+		return &recipe, err
 	}
 
 	err = json.Unmarshal(ingredientsJson, &recipe.Ingredients)
 	if err != nil {
-		return recipe, err
+		return &recipe, err
 	}
 
 	err = json.Unmarshal(directionsJson, &recipe.Directions)
 	if err != nil {
-		return recipe, err
+		return &recipe, err
 	}
 
-	return recipe, nil
+	return &recipe, nil
 }
 
 // GetAllRecipesFromDB function executes a SQL SELECT statement to fetch all
@@ -169,7 +178,7 @@ func GetFirstRecipeFromDB(db *sql.DB) (models.Recipe, error) {
 func GetAllRecipesFromDB(db *sql.DB) ([]models.Recipe, error) {
 	var recipes []models.Recipe
 
-	rows, err := db.Query("SELECT name, description, ingredients, directions FROM recipes")
+	rows, err := db.Query("SELECT id, name, description, ingredients, directions FROM recipes")
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +188,7 @@ func GetAllRecipesFromDB(db *sql.DB) ([]models.Recipe, error) {
 		var recipe models.Recipe
 		var ingredientsJSON, directionsJSON []byte
 
-		err := rows.Scan(&recipe.Name, &recipe.Description, &ingredientsJSON, &directionsJSON)
+		err := rows.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJSON, &directionsJSON)
 		if err != nil {
 			return nil, err
 		}
