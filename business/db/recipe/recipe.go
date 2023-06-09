@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/fcmdias/meal/business/models"
 	"github.com/google/uuid"
@@ -103,16 +104,19 @@ func Save(db *sql.DB, recipe models.Recipe) error {
 	if err != nil {
 		return err
 	}
+	recipe.DateCreated = time.Now()
 
-	sqlStatement := `INSERT INTO recipes (id, name, description, ingredients, directions) 
-	VALUES ($1, $2, $3, $4, $5)`
+	sqlStatement := `INSERT INTO recipes (id, name, description, ingredients, directions, created) 
+	VALUES ($1, $2, $3, $4, $5, $6)`
 	fmt.Println(sqlStatement)
 	_, err = db.Exec(sqlStatement,
 		recipe.ID,
 		recipe.Name,
 		recipe.Description,
 		ingredients,
-		directions)
+		directions,
+		recipe.DateCreated,
+	)
 	if err != nil {
 		return err
 	}
@@ -131,7 +135,8 @@ func CreateTable(db *sql.DB) error {
 		name TEXT NOT NULL,
 		description TEXT,
 		ingredients JSONB,
-		directions JSONB
+		directions JSONB,
+		created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 	)`)
 	if err != nil {
 		return err
@@ -151,8 +156,8 @@ func GetRecipeByIDFromDB(db *sql.DB, recipeID uuid.UUID) (*models.Recipe, error)
 	var recipe models.Recipe
 	var ingredientsJson, directionsJson []byte
 
-	row := db.QueryRow("SELECT id, name, description, ingredients, directions FROM recipes WHERE id = $1 LIMIT 1", recipeID.String())
-	err := row.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJson, &directionsJson)
+	row := db.QueryRow("SELECT id, name, description, ingredients, directions, created FROM recipes WHERE id = $1 LIMIT 1", recipeID.String())
+	err := row.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJson, &directionsJson, &recipe.DateCreated)
 	if err != nil {
 		return &recipe, err
 	}
@@ -178,7 +183,7 @@ func GetRecipeByIDFromDB(db *sql.DB, recipeID uuid.UUID) (*models.Recipe, error)
 func GetAllRecipesFromDB(db *sql.DB) ([]models.Recipe, error) {
 	var recipes []models.Recipe
 
-	rows, err := db.Query("SELECT id, name, description, ingredients, directions FROM recipes")
+	rows, err := db.Query("SELECT id, name, description, ingredients, directions, created FROM recipes")
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +193,7 @@ func GetAllRecipesFromDB(db *sql.DB) ([]models.Recipe, error) {
 		var recipe models.Recipe
 		var ingredientsJSON, directionsJSON []byte
 
-		err := rows.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJSON, &directionsJSON)
+		err := rows.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJSON, &directionsJSON, &recipe.DateCreated)
 		if err != nil {
 			return nil, err
 		}
