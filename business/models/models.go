@@ -13,7 +13,7 @@ type Recipe struct {
 	Ingredients []string
 	Directions  []string
 	DateCreated time.Time
-	DateUpdated time.Time
+	DateUpdated *time.Time `json:",omitempty"`
 }
 
 type NewRecipe struct {
