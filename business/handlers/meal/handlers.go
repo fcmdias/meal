@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/fcmdias/meal/business/db/recipe"
+	db "github.com/fcmdias/meal/business/db/recipe"
 	"github.com/fcmdias/meal/business/models"
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
@@ -41,7 +41,7 @@ func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recipeData := models.NewRecipeToRecipe(newRecipeData)
-	if err := recipe.Save(b.DB, recipeData); err != nil {
+	if err := db.Save(b.DB, recipeData); err != nil {
 		b.Log.Println(errors.Wrap(err, "failed to save recipe"))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -59,6 +59,59 @@ func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseJSON)
 }
 
+func (b *Base) Update(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	recipeIDStr := r.URL.Query().Get("id")
+	recipeID, err := uuid.Parse(recipeIDStr)
+	if err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		log.Printf("Invalid recipe ID: %v", err)
+		return
+	}
+
+	var RecipeEdit models.RecipeEdit
+	if err := json.NewDecoder(r.Body).Decode(&RecipeEdit); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		log.Printf("Error decoding recipe payload: %v", err)
+		return
+	}
+
+	// validate := validator.New()
+	// if err := validate.Struct(RecipeEdit); err != nil {
+	// 	http.Error(w, "Bad Request", http.StatusBadRequest)
+	// 	log.Printf("Error validating new recipe: %v", err)
+	// 	return
+	// }
+
+	recipe, err := db.GetRecipeByIDFromDB(b.DB, recipeID)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusMethodNotAllowed)
+		return
+	}
+	models.RecipeEditToRecipe(recipe, RecipeEdit)
+
+	if err := db.Update(b.DB, *recipe); err != nil {
+		b.Log.Println(errors.Wrap(err, "failed to update recipe"))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	responseJSON, err := json.Marshal(recipe)
+	if err != nil {
+		b.Log.Println(errors.Wrap(err, "failed to marshal recipe JSON"))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseJSON)
+}
+
 func (b *Base) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
@@ -66,7 +119,7 @@ func (b *Base) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	recipes, err := recipe.GetAllRecipesFromDB(b.DB)
+	recipes, err := db.GetAllRecipesFromDB(b.DB)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Error retrieving recipes: %v", err)
@@ -101,19 +154,19 @@ func (b *Base) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("id: ", recipeID.String())
-	recipeSaved, err := recipe.GetRecipeByIDFromDB(b.DB, recipeID)
+	recipe, err := db.GetRecipeByIDFromDB(b.DB, recipeID)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Error retrieving recipe: %v", err)
 		return
 	}
 
-	if recipeSaved == nil {
+	if recipe == nil {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 
-	jsonData, err := json.Marshal(recipeSaved)
+	jsonData, err := json.Marshal(recipe)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Error encoding recipe as JSON: %v", err)
@@ -186,10 +239,10 @@ func (b *Base) RecipeOfTheDayHandler(w http.ResponseWriter, r *http.Request) {
 			data.Diets[0].IsChecked = true
 			dietname = models.Vegan
 		}
-		data.Recipe = recipe.Get(dietname)
+		data.Recipe = db.Get(dietname)
 	} else {
 		data.Diets[0].IsChecked = true
-		data.Recipe = recipe.Get(models.Vegan)
+		data.Recipe = db.Get(models.Vegan)
 	}
 
 	fmt.Println(data)
@@ -210,7 +263,7 @@ func (b *Base) RecipeOfTheDayHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Base) Create(w http.ResponseWriter, r *http.Request) {
-	err := recipe.CreateTable(b.DB)
+	err := db.CreateTable(b.DB)
 	if err != nil {
 		log.Println(err)
 		return

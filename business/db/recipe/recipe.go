@@ -95,7 +95,6 @@ func Get(diet models.DietType) models.Recipe {
 
 func Save(db *sql.DB, recipe models.Recipe) error {
 
-	fmt.Println("saving new recipe")
 	ingredients, err := json.Marshal(recipe.Ingredients)
 	if err != nil {
 		return err
@@ -125,6 +124,39 @@ func Save(db *sql.DB, recipe models.Recipe) error {
 
 }
 
+func Update(db *sql.DB, recipe models.Recipe) error {
+
+	ingredients, err := json.Marshal(recipe.Ingredients)
+	if err != nil {
+		return err
+	}
+	directions, err := json.Marshal(recipe.Directions)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	recipe.DateUpdated = &now
+
+	sqlStatement := `UPDATE recipes
+	SET name = $1, description = $2, ingredients = $3, directions = $4, updated = $5
+	WHERE id = $6`
+
+	_, err = db.Exec(sqlStatement,
+		recipe.Name,
+		recipe.Description,
+		ingredients,
+		directions,
+		recipe.DateUpdated,
+		recipe.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 func CreateTable(db *sql.DB) error {
 	_, err := db.Exec(`DROP TABLE IF EXISTS recipes;`)
 	if err != nil {
@@ -136,7 +168,8 @@ func CreateTable(db *sql.DB) error {
 		description TEXT,
 		ingredients JSONB,
 		directions JSONB,
-		created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated TIMESTAMP
 	)`)
 	if err != nil {
 		return err
@@ -156,8 +189,8 @@ func GetRecipeByIDFromDB(db *sql.DB, recipeID uuid.UUID) (*models.Recipe, error)
 	var recipe models.Recipe
 	var ingredientsJson, directionsJson []byte
 
-	row := db.QueryRow("SELECT id, name, description, ingredients, directions, created FROM recipes WHERE id = $1 LIMIT 1", recipeID.String())
-	err := row.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJson, &directionsJson, &recipe.DateCreated)
+	row := db.QueryRow("SELECT id, name, description, ingredients, directions, created, updated FROM recipes WHERE id = $1 LIMIT 1", recipeID.String())
+	err := row.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJson, &directionsJson, &recipe.DateCreated, &recipe.DateUpdated)
 	if err != nil {
 		return &recipe, err
 	}
@@ -183,7 +216,7 @@ func GetRecipeByIDFromDB(db *sql.DB, recipeID uuid.UUID) (*models.Recipe, error)
 func GetAllRecipesFromDB(db *sql.DB) ([]models.Recipe, error) {
 	var recipes []models.Recipe
 
-	rows, err := db.Query("SELECT id, name, description, ingredients, directions, created FROM recipes")
+	rows, err := db.Query("SELECT id, name, description, ingredients, directions, created, updated FROM recipes")
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +226,7 @@ func GetAllRecipesFromDB(db *sql.DB) ([]models.Recipe, error) {
 		var recipe models.Recipe
 		var ingredientsJSON, directionsJSON []byte
 
-		err := rows.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJSON, &directionsJSON, &recipe.DateCreated)
+		err := rows.Scan(&recipe.ID, &recipe.Name, &recipe.Description, &ingredientsJSON, &directionsJSON, &recipe.DateCreated, &recipe.DateUpdated)
 		if err != nil {
 			return nil, err
 		}

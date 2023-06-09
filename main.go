@@ -72,6 +72,7 @@ func run(log *log.Logger) error {
 	http.HandleFunc("/recipes/get", b.Get)
 	http.HandleFunc("/recipes/recipe-of-the-day", b.RecipeOfTheDayHandler)
 	http.HandleFunc("/recipes/createtable", b.Create)
+	http.HandleFunc("/recipes/update", b.Update)
 	log.Fatal(http.ListenAndServe(cfg.Port, nil))
 
 	return nil
