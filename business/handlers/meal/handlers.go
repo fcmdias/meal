@@ -59,6 +59,51 @@ func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseJSON)
 }
 
+func (b *Base) SaveMany(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var newRecipesData []models.NewRecipe
+	if err := json.NewDecoder(r.Body).Decode(&newRecipesData); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		log.Printf("Error decoding recipe payload: %v", err)
+		return
+	}
+
+	validate := validator.New()
+	for _, newRecipeData := range newRecipesData {
+		if err := validate.Struct(newRecipeData); err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			log.Printf("Error validating new recipe: %v", err)
+			return
+		}
+	}
+
+	recipes := make([]models.Recipe, len(newRecipesData))
+	for i, newRecipeData := range newRecipesData {
+		recipes[i] = models.NewRecipeToRecipe(newRecipeData)
+	}
+
+	if err := db.SaveMany(b.DB, recipes); err != nil {
+		b.Log.Println(errors.Wrap(err, "failed to save recipes"))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	responseJSON, err := json.Marshal(recipes)
+	if err != nil {
+		b.Log.Println(errors.Wrap(err, "failed to marshal recipes JSON"))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(responseJSON)
+}
+
 func (b *Base) Update(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)

@@ -124,6 +124,67 @@ func Save(db *sql.DB, recipe models.Recipe) error {
 
 }
 
+func SaveMany(db *sql.DB, recipes []models.Recipe) error {
+
+	// Start a transaction
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Prepare the SQL statement
+	sqlStatement := `INSERT INTO recipes (id, name, description, ingredients, directions, created) 
+		VALUES ($1, $2, $3, $4, $5, $6)`
+	stmt, err := tx.Prepare(sqlStatement)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	now := time.Now()
+
+	// Iterate over each recipe and save it
+	for _, recipe := range recipes {
+		ingredients, err := json.Marshal(recipe.Ingredients)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		directions, err := json.Marshal(recipe.Directions)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		recipe.ID = uuid.New()
+		recipe.DateCreated = now
+
+		_, err = stmt.Exec(
+			recipe.ID,
+			recipe.Name,
+			recipe.Description,
+			ingredients,
+			directions,
+			recipe.DateCreated,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	fmt.Printf("saved %v recipes\n", len(recipes))
+	return nil
+}
+
 func Update(db *sql.DB, recipe models.Recipe) error {
 
 	ingredients, err := json.Marshal(recipe.Ingredients)

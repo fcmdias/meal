@@ -69,6 +69,7 @@ func run(log *log.Logger) error {
 
 	http.HandleFunc("/recipes", b.GetAll)
 	http.HandleFunc("/recipes/create", b.Save)
+	http.HandleFunc("/recipes/savemany", b.SaveMany)
 	http.HandleFunc("/recipes/get", b.Get)
 	http.HandleFunc("/recipes/recipe-of-the-day", b.RecipeOfTheDayHandler)
 	http.HandleFunc("/recipes/createtable", b.Create)
