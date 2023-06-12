@@ -11,3 +11,6 @@ restart: down up
 
 sample-data:
 	curl -X POST localhost:8080/recipes/savemany -d @data/recipes.json --header "Content-Type: application/json"
+
+query-recipes:
+	curl -X GET localhost:8080/recipes
