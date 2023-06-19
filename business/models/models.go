@@ -7,25 +7,19 @@ import (
 )
 
 type Recipe struct {
-	ID          uuid.UUID
-	Name        string
-	Description string
-	Ingredients []string
-	Directions  []string
-	DateCreated time.Time
-	DateUpdated *time.Time `json:",omitempty"`
-	// The estimated time required to cook the recipe.
-	CookingTime time.Duration
-	// The estimated time required for the recipe's preparation.
-	PreparationTime time.Duration
-	// An indication of the recipe's complexity or difficulty.
-	Difficulty int
-	// The culinary tradition or regional origin of the recipe (e.g., Italian, Mexican, Indian).
-	CuisineType []string
-	// The category or type of meal the recipe belongs to, (e.g., breakfast, lunch, dinner, starter, dessert or snack).
-	MealType string
-	// Tags or flags indicating dietary considerations (e.g., vegan, gluten-free, vegetarian).
-	DietaryRestrictions []string
+	ID                  uuid.UUID     // Unique identifier for the recipe.
+	Name                string        // Name or title of the recipe.
+	Description         string        // Brief description or summary of the recipe.
+	Ingredients         []string      // List of ingredients required for the recipe.
+	Directions          []string      // Step-by-step instructions for preparing the recipe.
+	DateCreated         time.Time     // Date and time when the recipe was created.
+	DateUpdated         *time.Time    // Date and time when the recipe was last updated.
+	CookingTime         time.Duration // Estimated time required to cook the recipe.
+	PreparationTime     time.Duration // Estimated time required for the recipe's preparation.
+	Difficulty          int           // Difficulty level of the recipe (1-5, with 1 being the easiest).
+	CuisineType         []string      // Culinary tradition or regional origin of the recipe (e.g., Italian, Mexican, Indian).
+	MealType            string        // Category or type of meal the recipe belongs to (e.g., breakfast, lunch, dinner, starter, dessert, or snack).
+	DietaryRestrictions []string      // Dietary restrictions or considerations for the recipe (e.g., vegan, gluten-free, vegetarian).
 }
 
 type NewRecipe struct {
