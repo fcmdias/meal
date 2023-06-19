@@ -14,6 +14,18 @@ type Recipe struct {
 	Directions  []string
 	DateCreated time.Time
 	DateUpdated *time.Time `json:",omitempty"`
+	// The estimated time required to cook the recipe.
+	CookingTime time.Duration
+	// The estimated time required for the recipe's preparation.
+	PreparationTime time.Duration
+	// An indication of the recipe's complexity or difficulty.
+	Difficulty int
+	// The culinary tradition or regional origin of the recipe (e.g., Italian, Mexican, Indian).
+	CuisineType []string
+	// The category or type of meal the recipe belongs to, (e.g., breakfast, lunch, dinner, starter, dessert or snack).
+	MealType string
+	// Tags or flags indicating dietary considerations (e.g., vegan, gluten-free, vegetarian).
+	DietaryRestrictions []string
 }
 
 type NewRecipe struct {
