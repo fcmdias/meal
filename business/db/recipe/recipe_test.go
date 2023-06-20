@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/fcmdias/meal/business/models"
+	models "github.com/fcmdias/meal/business/models/recipe"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/google/uuid"

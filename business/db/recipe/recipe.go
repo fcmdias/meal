@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fcmdias/meal/business/models"
+	models "github.com/fcmdias/meal/business/models/recipe"
 	"github.com/google/uuid"
 
 	_ "github.com/lib/pq"

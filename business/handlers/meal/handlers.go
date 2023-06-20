@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	db "github.com/fcmdias/meal/business/db/recipe"
-	"github.com/fcmdias/meal/business/models"
+	models "github.com/fcmdias/meal/business/models/recipe"
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
