@@ -10,7 +10,8 @@ import (
 
 	"github.com/caarlos0/env/v6"
 
-	"github.com/fcmdias/meal/business/handlers/meal"
+	rating "github.com/fcmdias/meal/business/handlers/rating"
+	meal "github.com/fcmdias/meal/business/handlers/recipe"
 	_ "github.com/lib/pq"
 )
 
@@ -30,6 +31,7 @@ func run(log *log.Logger) error {
 
 	cfg := loadConfig()
 	b := meal.Base{Log: log}
+	ratingB := rating.Base{Log: log}
 
 	// =======================================================================
 	// Database Support
@@ -40,13 +42,14 @@ func run(log *log.Logger) error {
 	}
 	defer db.Close()
 	b.DB = db
+	ratingB.DB = db
 
 	// =======================================================================
 	// App running
 
 	server := &http.Server{
 		Addr:         cfg.Port,
-		Handler:      setupRoutes(b),
+		Handler:      setupRoutes(b, ratingB),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -90,8 +93,9 @@ func connectToDatabase(log *log.Logger) (*sql.DB, error) {
 	return db, nil
 }
 
-func setupRoutes(b meal.Base) *http.ServeMux {
+func setupRoutes(b meal.Base, ratingB rating.Base) *http.ServeMux {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/ratings/save", ratingB.Save)
 	mux.HandleFunc("/recipes", b.GetAll)
 	mux.HandleFunc("/recipes/create", b.Save)
 	mux.HandleFunc("/recipes/savemany", b.SaveMany)
