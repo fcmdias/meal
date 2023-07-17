@@ -10,6 +10,7 @@ import (
 	models "github.com/fcmdias/meal/business/models/user"
 	"github.com/go-playground/validator"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Base struct {
@@ -36,6 +37,13 @@ func (b *Base) Save(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error validating new user: %v", err)
 		return
 	}
+
+	// Encrypt Password
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), 10)
+	if err != nil {
+		panic(err)
+	}
+	newUser.Password = string(passwordHash)
 
 	// userData := models.NewRecipeToRecipe(newUser)
 	if err := db.Save(b.DB, newUser); err != nil {
