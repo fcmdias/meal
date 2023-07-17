@@ -14,4 +14,5 @@ type User struct {
 	Name                string    // Full name of the user.
 	DateOfBirth         time.Time // Date of birth of the user.
 	DietaryRestrictions []string  // Dietary restrictions or considerations for the user (e.g., vegan, gluten-free, vegetarian).
+	DateCreated         time.Time
 }

@@ -12,6 +12,7 @@ import (
 
 	rating "github.com/fcmdias/meal/business/handlers/rating"
 	meal "github.com/fcmdias/meal/business/handlers/recipe"
+	user "github.com/fcmdias/meal/business/handlers/user"
 	_ "github.com/lib/pq"
 )
 
@@ -32,6 +33,7 @@ func run(log *log.Logger) error {
 	cfg := loadConfig()
 	b := meal.Base{Log: log}
 	ratingB := rating.Base{Log: log}
+	userB := user.Base{Log: log}
 
 	// =======================================================================
 	// Database Support
@@ -43,13 +45,14 @@ func run(log *log.Logger) error {
 	defer db.Close()
 	b.DB = db
 	ratingB.DB = db
+	userB.DB = db
 
 	// =======================================================================
 	// App running
 
 	server := &http.Server{
 		Addr:         cfg.Port,
-		Handler:      setupRoutes(b, ratingB),
+		Handler:      setupRoutes(b, ratingB, userB),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -93,15 +96,27 @@ func connectToDatabase(log *log.Logger) (*sql.DB, error) {
 	return db, nil
 }
 
-func setupRoutes(b meal.Base, ratingB rating.Base) *http.ServeMux {
+func setupRoutes(b meal.Base, ratingB rating.Base, userB user.Base) *http.ServeMux {
 	mux := http.NewServeMux()
+
+	// =============================================
+	// users
+	mux.HandleFunc("/users", userB.GetAll)
+	mux.HandleFunc("/users/save", userB.Save)
+
+	// =============================================
+	// ratings
 	mux.HandleFunc("/ratings/save", ratingB.Save)
+
+	// =============================================
+	// recipes
 	mux.HandleFunc("/recipes", b.GetAll)
-	mux.HandleFunc("/recipes/create", b.Save)
+	mux.HandleFunc("/recipes/save", b.Save)
 	mux.HandleFunc("/recipes/savemany", b.SaveMany)
 	mux.HandleFunc("/recipes/get", b.Get)
 	mux.HandleFunc("/recipes/recipe-of-the-day", b.RecipeOfTheDayHandler)
 	mux.HandleFunc("/recipes/createtable", b.Create)
 	mux.HandleFunc("/recipes/update", b.Update)
+
 	return mux
 }

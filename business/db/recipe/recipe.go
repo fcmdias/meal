@@ -220,6 +220,7 @@ func Update(db *sql.DB, recipe models.Recipe) error {
 
 func CreateTable(db *sql.DB) error {
 
+	// ==================================================
 	// Recipe table.
 	_, err := db.Exec(`DROP TABLE IF EXISTS recipes;`)
 	if err != nil {
@@ -239,6 +240,7 @@ func CreateTable(db *sql.DB) error {
 	}
 	fmt.Println("table recipes is created")
 
+	// ==================================================
 	// Ratings table.
 	_, err = db.Exec(`DROP TABLE IF EXISTS ratings;`)
 	if err != nil {
@@ -256,6 +258,27 @@ func CreateTable(db *sql.DB) error {
 		return err
 	}
 	fmt.Println("table ratings is created")
+
+	// ==================================================
+	// User table.
+	_, err = db.Exec(`DROP TABLE IF EXISTS users;`)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`CREATE TABLE users (
+		id UUID PRIMARY KEY,
+		username TEXT,
+		email TEXT,
+		password TEXT,
+		name TEXT,
+		dateOfBirth TIMESTAMP,
+		dietaryRestrictions JSONB,
+		created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		return err
+	}
+	fmt.Println("table users is created")
 	return nil
 }
 
