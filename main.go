@@ -102,7 +102,9 @@ func setupRoutes(b meal.Base, ratingB rating.Base, userB user.Base) *http.ServeM
 	// =============================================
 	// users
 	mux.HandleFunc("/users", userB.GetAll)
-	mux.HandleFunc("/users/save", userB.Save)
+	mux.HandleFunc("/users/register", userB.Register)
+	mux.HandleFunc("/users/login", userB.Login)
+	mux.HandleFunc("/users/ping", userB.Ping)
 
 	// =============================================
 	// ratings

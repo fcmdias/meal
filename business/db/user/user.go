@@ -34,6 +34,29 @@ func Save(db *sql.DB, user models.User) error {
 
 }
 
+// GetUserByUsername retrieves a user record from the database based on the username
+func GetUserByUsername(db *sql.DB, username string) (models.User, error) {
+	var user models.User
+
+	sqlStatement := `SELECT id, email, password, name, dateOfBirth, created FROM users WHERE username = $1`
+	row := db.QueryRow(sqlStatement, username)
+	err := row.Scan(
+		&user.ID,
+		&user.Email,
+		&user.Password,
+		&user.Name,
+		&user.DateOfBirth,
+		&user.DateCreated,
+	)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	user.Username = username // Set the username separately as it's not retrieved from the query
+
+	return user, nil
+}
+
 func GetAllUsersFromDB(db *sql.DB) ([]models.User, error) {
 	var users []models.User
 
