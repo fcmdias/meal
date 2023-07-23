@@ -15,29 +15,28 @@ import (
 )
 
 func (b *Base) Ping(w http.ResponseWriter, r *http.Request) {
-	// Get the token from the Authorization header
+
+	// ========================================================
+	// Get the token from the Authorization header and validate it.
+
 	tokenString := r.Header.Get("Authorization")
 	if tokenString == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	// Verify the token
-	// claims, err := verifyToken(tokenString)
-	// if err != nil {
-	// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	// 	return
-	// }
-
-	// // Pass the username from the token in the request context
-	// ctx := r.Context()
-	// ctx = context.WithValue(ctx, "username", claims.Username)
-	// r = r.WithContext(ctx)
-
 	if auth.ValidateToken(tokenString) != nil {
 		http.Error(w, "Not Authorized", http.StatusUnauthorized)
 		return
 	}
+
+	// TODO
+	// ========================================================
+	// Pass the username from the token in the request context.
+
+	// ctx := r.Context()
+	// ctx = context.WithValue(ctx, "username", claims.Username)
+	// r = r.WithContext(ctx)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -64,16 +63,21 @@ func (b *Base) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the username or email already exist in the database
+	// ========================================================
+	// Check if the username or email already exist in the database.
 
-	// Encrypt Password
+	// ========================================================
+	// Encrypt Password.
+
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), 10)
 	if err != nil {
 		panic(err)
 	}
 	newUser.Password = string(passwordHash)
 
-	// userData := models.NewRecipeToRecipe(newUser)
+	// ========================================================
+	// Save new user.
+
 	if err := db.Save(b.DB, newUser); err != nil {
 		b.Log.Println(errors.Wrap(err, "failed to save recipe"))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -81,7 +85,7 @@ func (b *Base) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ========================================================
-	// Generate token
+	// Generate token.
 
 	token, err := generateToken(newUser.Email, newUser.Username)
 	if err != nil {
@@ -99,6 +103,7 @@ func (b *Base) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Base) Login(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
@@ -118,17 +123,16 @@ func (b *Base) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check user credentials
-	// Check if the username exists in the database
+	// ============================================================
+	// Check login credentials provided.
+	// Compare the provided password with the stored hashed password.
+
 	storedUser, err := db.GetUserByUsername(b.DB, userData.Username)
 	if err != nil {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		log.Printf("Not able to get user from DB: %v", err)
 		return
 	}
-
-	// ============================================================
-	// Compare the provided password with the stored hashed password
 
 	err = bcrypt.CompareHashAndPassword([]byte(storedUser.Password), []byte(userData.Password))
 	if err != nil {
@@ -137,7 +141,7 @@ func (b *Base) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ============================================================
-	// create token
+	// Create token.
 
 	token, err := generateToken(storedUser.Email, storedUser.Password)
 	if err != nil {
@@ -152,5 +156,4 @@ func (b *Base) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"token": "%s"}`, token)
 	w.WriteHeader(http.StatusOK)
-
 }
